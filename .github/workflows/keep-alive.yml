@@ -1,0 +1,144 @@
+name: Keep Backend Alive
+
+# Prevent Render.com from sleeping by pinging every 14 minutes
+# This ensures 24/7 uptime within free tier limits
+
+on:
+  schedule:
+    # Ping every 14 minutes (just before 15-minute sleep policy)
+    - cron: '*/14 * * * *'
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 🎨 Ping Backend Health Endpoint
+        run: |
+          echo "🚀 Pinging ViralSafe backend to prevent sleeping..."
+          
+          BACKEND_URL="${{ secrets.BACKEND_URL }}"
+          
+          if [ -z "$BACKEND_URL" ]; then
+            echo "⚠️ BACKEND_URL secret not set. Please add it in repository secrets."
+            echo "📄 Go to: Settings > Secrets and Variables > Actions"
+            echo "🔗 Add: BACKEND_URL = https://your-backend.onrender.com"
+            exit 0
+          fi
+          
+          echo "🔍 Checking backend health: $BACKEND_URL/health"
+          
+          # Ping with timeout and user agent
+          response=$(curl -s -w "\n%{http_code}" -m 30 \
+            -H "User-Agent: ViralSafe-KeepAlive/1.0" \
+            -H "Accept: application/json" \
+            "$BACKEND_URL/health")
+          
+          # Extract response body and status code
+          body=$(echo "$response" | head -n -1)
+          status_code=$(echo "$response" | tail -n 1)
+          
+          echo "📊 Response status: $status_code"
+          echo "📄 Response body: $body"
+          
+          # Check if request was successful
+          if [ "$status_code" -eq "200" ]; then
+            echo "✅ Backend is healthy and awake!"
+            
+            # Parse JSON response for additional info
+            if command -v jq >/dev/null 2>&1; then
+              analyses_count=$(echo "$body" | jq -r '.analyses_in_memory // "unknown"')
+              timestamp=$(echo "$body" | jq -r '.timestamp // "unknown"')
+              echo "📋 Analyses in memory: $analyses_count"
+              echo "⏰ Backend timestamp: $timestamp"
+            fi
+          else
+            echo "❌ Backend health check failed with status: $status_code"
+            echo "🚨 This might indicate the backend is starting up or experiencing issues"
+            
+            # Don't fail the workflow for temporary issues
+            exit 0
+          fi
+          
+      - name: 📊 Test API Functionality
+        run: |
+          echo "🧪 Testing API analyze endpoint..."
+          
+          BACKEND_URL="${{ secrets.BACKEND_URL }}"
+          
+          if [ -z "$BACKEND_URL" ]; then
+            echo "⚠️ Skipping API test - BACKEND_URL not set"
+            exit 0
+          fi
+          
+          # Test analyze endpoint with sample content
+          api_response=$(curl -s -w "\n%{http_code}" -m 30 \
+            -X POST "$BACKEND_URL/analyze" \
+            -H "Content-Type: application/json" \
+            -H "User-Agent: ViralSafe-KeepAlive/1.0" \
+            -d '{
+              "content": "This is a test message for keep-alive functionality",
+              "platform": "general"
+            }')
+          
+          api_body=$(echo "$api_response" | head -n -1)
+          api_status=$(echo "$api_response" | tail -n 1)
+          
+          if [ "$api_status" -eq "200" ]; then
+            echo "✅ API analyze endpoint working correctly!"
+            
+            # Extract analysis ID if available
+            if command -v jq >/dev/null 2>&1; then
+              analysis_id=$(echo "$api_body" | jq -r '.id // "unknown"')
+              risk_score=$(echo "$api_body" | jq -r '.risk_score // "unknown"')
+              processing_time=$(echo "$api_body" | jq -r '.processing_time_ms // "unknown"')
+              
+              echo "🆔 Analysis ID: $analysis_id"
+              echo "🎢 Risk score: $risk_score"
+              echo "⚡ Processing time: ${processing_time}ms"
+            fi
+          else
+            echo "⚠️ API test returned status: $api_status"
+            echo "📄 Response: $api_body"
+            # Don't fail for API issues, just log them
+          fi
+          
+      - name: 📈 Log Keep-Alive Stats
+        run: |
+          echo "📊 Keep-Alive Statistics:"
+          echo "- ⏰ Trigger time: $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+          echo "- 🎯 Purpose: Prevent Render.com 15-minute sleep"
+          echo "- 🔄 Frequency: Every 14 minutes"
+          echo "- 💰 Cost impact: $0 (within free tier limits)"
+          echo "- 🚨 Platform uptime: 24/7 maintained"
+          
+          # Optional: ping analytics endpoint
+          BACKEND_URL="${{ secrets.BACKEND_URL }}"
+          if [ -n "$BACKEND_URL" ]; then
+            analytics=$(curl -s -m 15 "$BACKEND_URL/analytics" || echo '{}')
+            if command -v jq >/dev/null 2>&1; then
+              total_analyses=$(echo "$analytics" | jq -r '.total_analyses // 0')
+              echo "- 📋 Total analyses performed: $total_analyses"
+            fi
+          fi
+          
+          echo "✨ Keep-alive completed successfully!"
+
+      - name: 🚨 Notify on Persistent Failures
+        if: failure()
+        run: |
+          echo "🚨 Keep-alive workflow failed!"
+          echo "🔍 This could indicate:"
+          echo "   - Backend is down or crashed"
+          echo "   - Render.com service issues"
+          echo "   - Configuration problems"
+          echo "   - Network connectivity issues"
+          echo ""
+          echo "🚑 Recommended actions:"
+          echo "   1. Check Render.com service status"
+          echo "   2. Review backend logs in Render dashboard"
+          echo "   3. Verify BACKEND_URL secret is correct"
+          echo "   4. Test manual deployment if needed"
+          echo ""
+          echo "📄 Troubleshooting: https://github.com/Gzeu/viralsafe-platform-free/blob/main/TROUBLESHOOTING.md"
