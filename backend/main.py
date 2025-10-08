@@ -172,6 +172,7 @@ def root():
         "message": "🛡️ ViralSafe API - Content Safety Analysis",
         "version": "1.0.0",
         "status": "active",
+        "hosting": "render.com",
         "endpoints": {
             "health": "/health",
             "analyze": "/analyze",
@@ -186,7 +187,8 @@ def health_check():
         "status": "healthy",
         "timestamp": datetime.now().isoformat(),
         "analyses_in_memory": len(analysis_store),
-        "uptime": "ok"
+        "uptime": "ok",
+        "hosting": "render.com"
     }
 
 @app.post("/analyze", response_model=AnalysisResponse)
@@ -256,8 +258,8 @@ def update_analytics(risk_level: str, platform: str):
     else:
         analytics_data["platform_stats"][platform] = 1
 
-# Pentru deployment pe Railway/Render
+# Pentru deployment pe Render/Railway (port flexibil)
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get("PORT", 8000))
+    port = int(os.environ.get("PORT", 10000))  # Render folosește 10000, Railway 8000
     uvicorn.run(app, host="0.0.0.0", port=port)
