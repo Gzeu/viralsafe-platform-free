@@ -1,11 +1,9 @@
 name: Deploy to Free Tier
-
 on:
   push:
-    branches: [ main ]
+    branches: [ main, feature/enhanced-verification ]
   pull_request:
-    branches: [ main ]
-
+    branches: [ main, feature/enhanced-verification ]
 jobs:
   test-backend:
     runs-on: ubuntu-latest
@@ -40,7 +38,6 @@ jobs:
         assert response.status_code == 200
         print('✅ Backend health check passed')
         "
-
   test-frontend:
     runs-on: ubuntu-latest
     steps:
@@ -62,7 +59,6 @@ jobs:
       run: |
         cd frontend
         npm run build
-
   deploy-backend:
     needs: test-backend
     runs-on: ubuntu-latest
@@ -74,7 +70,6 @@ jobs:
       run: |
         echo "Backend will be deployed to Railway automatically"
         echo "Connect your repo to Railway: https://railway.app"
-
   deploy-frontend:
     needs: test-frontend
     runs-on: ubuntu-latest
