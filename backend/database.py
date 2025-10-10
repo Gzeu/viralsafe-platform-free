@@ -4,7 +4,7 @@ from typing import Optional, Dict, List
 from datetime import datetime, timedelta
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from pymongo.errors import ConnectionFailure, ServerSelectionTimeoutError
-from .config import settings
+from config import settings
 
 logger = logging.getLogger(__name__)
 
