@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ViralSafe Platform - Open Source Content Safety Analysis</title>
+    <meta name="description" content="Open Source Content Safety Analysis Platform - Running entirely on FREE tier cloud services. Scam & phishing detection with AI-powered risk scoring.">
+    <meta name="keywords" content="content safety, scam detection, phishing, security, AI, free tier, open source">
+    <meta name="author" content="George Pricop">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://gzeu.github.io/viralsafe-platform-free/">
+    <meta property="og:title" content="ViralSafe Platform - Open Source Content Safety Analysis">
+    <meta property="og:description" content="Open Source Content Safety Analysis Platform with AI-powered scam detection and risk scoring. Running entirely on FREE tier services.">
+    <meta property="og:image" content="https://gzeu.github.io/viralsafe-platform-free/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://gzeu.github.io/viralsafe-platform-free/">
+    <meta property="twitter:title" content="ViralSafe Platform - Open Source Content Safety Analysis">
+    <meta property="twitter:description" content="Open Source Content Safety Analysis Platform with AI-powered scam detection and risk scoring. Running entirely on FREE tier services.">
+    <meta property="twitter:image" content="https://gzeu.github.io/viralsafe-platform-free/og-image.png">
+    
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .hero {
+            text-align: center;
+            color: white;
+            margin-bottom: 3rem;
+        }
+        
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            font-weight: 800;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            opacity: 0.95;
+        }
+        
+        .badges {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+        
+        .badge {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .status-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .status-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+        }
+        
+        .status-card h3 {
+            color: #2d3748;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #48bb78;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(72, 187, 120, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(72, 187, 120, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(72, 187, 120, 0); }
+        }
+        
+        .status-card p {
+            color: #4a5568;
+            margin-bottom: 1rem;
+        }
+        
+        .status-card .url {
+            color: #4299e1;
+            text-decoration: none;
+            font-weight: 600;
+            word-break: break-all;
+        }
+        
+        .status-card .url:hover {
+            text-decoration: underline;
+        }
+        
+        .cta-section {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .cta-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: 2rem;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #4299e1, #3182ce);
+            color: white;
+            box-shadow: 0 4px 15px rgba(66, 153, 225, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(66, 153, 225, 0.6);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.9);
+            color: #4a5568;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn-secondary:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+        
+        .feature {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+        
+        .footer {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 3rem;
+        }
+        
+        .footer a {
+            color: rgba(255, 255, 255, 0.9);
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+        
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            
+            .container {
+                padding: 1rem;
+            }
+            
+            .cta-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="hero">
+            <h1>🛡️ ViralSafe Platform</h1>
+            <p>Open Source Content Safety Analysis Platform</p>
+            <p><strong>Running entirely on FREE tier cloud services - $0/month</strong></p>
+            
+            <div class="badges">
+                <span class="badge">✅ Production Ready</span>
+                <span class="badge">💰 $0/month</span>
+                <span class="badge">🚀 Live on Vercel</span>
+                <span class="badge">🟢 Render.com Backend</span>
+                <span class="badge">🔓 Open Source</span>
+            </div>
+        </div>
+        
+        <div class="status-grid">
+            <div class="status-card">
+                <h3>
+                    <span class="status-indicator"></span>
+                    Frontend (Vercel)
+                </h3>
+                <p>Next.js 14 application with TypeScript and Tailwind CSS</p>
+                <a href="https://viralsafe-platform-free.vercel.app" class="url" target="_blank" rel="noopener">
+                    viralsafe-platform-free.vercel.app
+                </a>
+            </div>
+            
+            <div class="status-card">
+                <h3>
+                    <span class="status-indicator"></span>
+                    Backend API (Render.com)
+                </h3>
+                <p>FastAPI with Python 3.11, containerized deployment</p>
+                <a href="https://viralsafe-platform-free-api.onrender.com" class="url" target="_blank" rel="noopener">
+                    viralsafe-platform-free-api.onrender.com
+                </a>
+            </div>
+            
+            <div class="status-card">
+                <h3>
+                    <span class="status-indicator"></span>
+                    API Documentation
+                </h3>
+                <p>Interactive Swagger/OpenAPI documentation</p>
+                <a href="https://viralsafe-platform-free-api.onrender.com/docs" class="url" target="_blank" rel="noopener">
+                    /docs - Interactive API
+                </a>
+            </div>
+            
+            <div class="status-card">
+                <h3>
+                    <span class="status-indicator"></span>
+                    Health Monitoring
+                </h3>
+                <p>24/7 automated health checks and keep-alive system</p>
+                <a href="https://viralsafe-platform-free-api.onrender.com/health" class="url" target="_blank" rel="noopener">
+                    /health - Status Check
+                </a>
+            </div>
+        </div>
+        
+        <div class="cta-section">
+            <h2 style="color: white; margin-bottom: 1rem;">🚀 Ready to Deploy?</h2>
+            <p style="color: rgba(255, 255, 255, 0.9); font-size: 1.1rem;">Get your own instance running in under 2 minutes</p>
+            
+            <div class="cta-buttons">
+                <a href="https://viralsafe-platform-free.vercel.app" class="btn btn-primary" target="_blank" rel="noopener">
+                    🌐 Try Live Demo
+                </a>
+                <a href="https://github.com/Gzeu/viralsafe-platform-free" class="btn btn-secondary" target="_blank" rel="noopener">
+                    📁 View on GitHub
+                </a>
+                <a href="https://render.com/deploy?repo=https://github.com/Gzeu/viralsafe-platform-free" class="btn btn-secondary" target="_blank" rel="noopener">
+                    🚀 Deploy to Render
+                </a>
+                <a href="https://vercel.com/new/clone?repository-url=https://github.com/Gzeu/viralsafe-platform-free" class="btn btn-secondary" target="_blank" rel="noopener">
+                    ⚡ Deploy to Vercel
+                </a>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">🔍</div>
+                <h4>Scam Detection</h4>
+                <p>AI-powered analysis across 50+ risk indicators</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">📈</div>
+                <h4>Risk Scoring</h4>
+                <p>Detailed risk analysis with 0-100% scoring</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">⚡</div>
+                <h4>Fast Performance</h4>
+                <p>Sub-50ms response time with optimized algorithms</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🛡️</div>
+                <h4>Privacy Focused</h4>
+                <p>No data storage, in-memory analysis only</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">💰</div>
+                <h4>100% Free</h4>
+                <p>Running entirely on free tier services</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🔓</div>
+                <h4>Open Source</h4>
+                <p>MIT licensed, fully transparent code</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>
+                ✨ <strong>Successfully running on Render.com + Vercel + GitHub Pages</strong> ✨
+            </p>
+            <p>
+                Made with ❤️ by <a href="https://github.com/Gzeu" target="_blank" rel="noopener">George Pricop</a> • 
+                <a href="https://github.com/Gzeu/viralsafe-platform-free" target="_blank" rel="noopener">View Source</a> • 
+                <a href="https://github.com/Gzeu/viralsafe-platform-free/blob/main/LICENSE" target="_blank" rel="noopener">MIT License</a>
+            </p>
+            <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.8;">
+                🎯 Production Ready • 💰 $0/month • 🚀 Deploy in 2 minutes • 🌍 Open Source
+            </p>
+        </div>
+    </div>
+</body>
+</html>
