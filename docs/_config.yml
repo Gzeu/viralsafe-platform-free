@@ -1,0 +1,126 @@
+# ViralSafe Platform - GitHub Pages Configuration
+
+# Site settings
+title: "ViralSafe Platform"
+description: "Open Source Content Safety Analysis Platform - Running entirely on FREE tier cloud services with AI-powered scam detection and risk scoring."
+baseurl: "/viralsafe-platform-free"
+url: "https://gzeu.github.io"
+
+# Author information
+author:
+  name: "George Pricop"
+  email: "pricopgeorge@gmail.com"
+  github: "Gzeu"
+  twitter: "@GeorgePricop"
+
+# Repository information
+repository: "Gzeu/viralsafe-platform-free"
+github_username: "Gzeu"
+
+# SEO and social media
+social:
+  name: "ViralSafe Platform"
+  links:
+    - "https://github.com/Gzeu/viralsafe-platform-free"
+    - "https://viralsafe-platform-free.vercel.app"
+    - "https://viralsafe-platform-free-api.onrender.com"
+
+# Open Graph / Twitter Card defaults
+defaults:
+  - scope:
+      path: ""
+    values:
+      image: "/assets/og-image.png"
+      twitter:
+        card: "summary_large_image"
+        site: "@GeorgePricop"
+        creator: "@GeorgePricop"
+
+# Live deployment URLs
+live_urls:
+  frontend: "https://viralsafe-platform-free.vercel.app"
+  backend: "https://viralsafe-platform-free-api.onrender.com"
+  api_docs: "https://viralsafe-platform-free-api.onrender.com/docs"
+  health_check: "https://viralsafe-platform-free-api.onrender.com/health"
+  analytics: "https://viralsafe-platform-free-api.onrender.com/analytics"
+  render_dashboard: "https://dashboard.render.com"
+  vercel_dashboard: "https://vercel.com/dashboard"
+
+# Project metadata
+project:
+  version: "1.3.0"
+  status: "Production Ready"
+  license: "MIT"
+  cost: "$0/month"
+  platforms:
+    - "Render.com (Backend)"
+    - "Vercel (Frontend)"
+    - "GitHub Pages (Showcase)"
+  
+# Features
+features:
+  - "Real-time content safety analysis"
+  - "AI-powered scam & phishing detection"
+  - "Risk scoring (0-100%) with categories"
+  - "Platform-specific analysis"
+  - "24/7 automated monitoring"
+  - "100% Free tier hosting"
+  - "Open source & privacy-focused"
+  - "Sub-50ms response time"
+
+# Technology stack
+tech_stack:
+  backend:
+    - "FastAPI + Python 3.11"
+    - "Pydantic data validation"
+    - "Uvicorn ASGI server"
+    - "Docker containers"
+  frontend:
+    - "Next.js 14 + TypeScript"
+    - "Tailwind CSS"
+    - "Lucide React icons"
+    - "Responsive design"
+  infrastructure:
+    - "Render.com (Backend)"
+    - "Vercel (Frontend)"
+    - "GitHub Actions (CI/CD)"
+    - "GitHub Pages (Showcase)"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+theme: minima
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Include/Exclude files
+include:
+  - "_pages"
+exclude:
+  - "node_modules"
+  - "package.json"
+  - "package-lock.json"
+  - "README.md"
+  - "Gemfile"
+  - "Gemfile.lock"
+  - "vendor"
+
+# Permalink structure
+permalink: pretty
+
+# Collections (if needed in the future)
+collections:
+  docs:
+    output: true
+    permalink: /:collection/:name/
+
+# Custom variables for templates
+custom:
+  deployment_date: "2025-10-10"
+  last_updated: "2025-10-10"
+  github_repo: "https://github.com/Gzeu/viralsafe-platform-free"
+  issues_url: "https://github.com/Gzeu/viralsafe-platform-free/issues"
+  discussions_url: "https://github.com/Gzeu/viralsafe-platform-free/discussions"
+  license_url: "https://github.com/Gzeu/viralsafe-platform-free/blob/main/LICENSE"
