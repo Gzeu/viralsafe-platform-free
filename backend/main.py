@@ -55,7 +55,7 @@ async def lifespan(app: FastAPI):
     if settings.virustotal_configured:
         vt_initialized = await vt_api.initialize()
         if vt_initialized:
-            logger.info("✅ VirusTotal API initialized successfully")
+            logger.info("✅ VirusTotal API connected successfully")
         else:
             logger.warning("⚠️ VirusTotal API initialization failed")
     else:
@@ -66,7 +66,7 @@ async def lifespan(app: FastAPI):
     yield
     
     # Shutdown
-    logger.info("🛑 Shutting down ViralSafe Platform...")
+    logger.info("🛁 Shutting down ViralSafe Platform...")
     await db_manager.disconnect()
     await vt_api.close()
     logger.info("✅ Shutdown complete")
@@ -181,23 +181,33 @@ async def analyze_content_safety(content: str, platform: str, url: Optional[str]
         categories.append("potential_misinformation")
         indicators.extend(misinfo_matches[:2])
     
-    # URL Analysis with VirusTotal
+    # URL Analysis with VirusTotal (improved error handling)
     if check_urls and url and settings.virustotal_configured:
         try:
+            logger.info(f"🔍 Checking URL with VirusTotal: {url}")
             vt_report = await vt_api.get_url_report(url)
             if vt_report:
                 virustotal_report = vt_report
-                vt_risk = vt_report.get('risk_score', 0)
-                if vt_risk > 0.7:
-                    risk_score += 0.4
-                    categories.append("malicious_url")
-                    indicators.append(f"virustotal_malicious_detections: {vt_report.get('malicious', 0)}")
-                elif vt_risk > 0.3:
-                    risk_score += 0.2
-                    categories.append("suspicious_url")
-                    indicators.append(f"virustotal_suspicious_detections: {vt_report.get('suspicious', 0)}")
+                
+                # Check if it's a fallback response
+                if vt_report.get('fallback', False):
+                    logger.info("⚠️ VirusTotal unavailable, using fallback analysis")
+                    indicators.append("virustotal_fallback_analysis")
+                else:
+                    vt_risk = vt_report.get('risk_score', 0)
+                    if vt_risk > 0.7:
+                        risk_score += 0.4
+                        categories.append("malicious_url")
+                        indicators.append(f"virustotal_malicious_detections: {vt_report.get('malicious', 0)}")
+                    elif vt_risk > 0.3:
+                        risk_score += 0.2
+                        categories.append("suspicious_url")
+                        indicators.append(f"virustotal_suspicious_detections: {vt_report.get('suspicious', 0)}")
+                    else:
+                        indicators.append("virustotal_url_clean")
         except Exception as e:
-            logger.warning(f"VirusTotal URL check failed: {e}")
+            logger.warning(f"⚠️ VirusTotal URL check failed: {e}")
+            indicators.append("virustotal_check_failed")
     
     # Platform-specific risk adjustments
     platform_multipliers = {
@@ -304,14 +314,26 @@ async def health_check():
     if settings.database_configured:
         db_health = await db_manager.health_check()
     
-    # Get VirusTotal health
+    # Get VirusTotal health with improved error handling
     vt_health = {"status": "not_configured"}
     if settings.virustotal_configured:
         vt_health = await vt_api.health_check()
+        
+        # If VirusTotal is in fallback mode, still show as functional
+        if vt_health.get("fallback", False):
+            vt_health["status"] = "degraded"
     
-    # Overall system status
+    # Determine overall system status
     overall_status = "healthy"
-    if db_health.get("status") == "error" or vt_health.get("status") == "error":
+    
+    # System is degraded if either service has issues but is recoverable
+    if (db_health.get("status") in ["error", "degraded"] or 
+        vt_health.get("status") in ["error", "degraded"]):
+        overall_status = "degraded"
+    
+    # System is critical if database is completely down (VirusTotal is optional)
+    if db_health.get("status") == "error" and settings.database_configured:
+        # Still operational with fallback storage
         overall_status = "degraded"
     
     return HealthResponse(
