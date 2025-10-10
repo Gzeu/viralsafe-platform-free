@@ -5,7 +5,7 @@ import time
 from typing import Optional, Dict, List
 from datetime import datetime, timedelta
 import httpx
-from .config import settings
+from config import settings
 
 logger = logging.getLogger(__name__)
 
