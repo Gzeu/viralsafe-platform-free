@@ -1,112 +1,256 @@
 import os
-from typing import Optional
+from typing import Optional, Dict, Any
+import logging
+
+logger = logging.getLogger(__name__)
 
 class Settings:
-    """Application configuration management using environment variables"""
+    """
+    Enhanced configuration management for ViralSafe v3.1
+    Handles all environment variables with validation and defaults
+    """
     
-    # MongoDB Configuration
-    MONGODB_URI: str = os.getenv("MONGODB_URI", "")
-    MONGODB_DB_NAME: str = os.getenv("MONGODB_DB_NAME", "viralsafe")
+    def __init__(self):
+        # Core API Settings
+        self.API_TITLE = "ViralSafe Platform Enhanced API"
+        self.API_VERSION = "3.1.0"
+        self.ENVIRONMENT = os.getenv("ENVIRONMENT", "development")
+        self.PORT = int(os.getenv("PORT", 10000))
+        self.LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
+        
+        # AI Provider Settings (NEW in v3.1)
+        self.GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+        self.ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+        self.OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+        
+        # Database Settings
+        self.MONGODB_URI = os.getenv("MONGODB_URI")
+        self.MONGODB_DB_NAME = os.getenv("MONGODB_DB_NAME", "viralsafe")
+        self.DATABASE_PING_TIMEOUT = int(os.getenv("DATABASE_PING_TIMEOUT", 5))
+        
+        # Security API Settings
+        self.VIRUSTOTAL_API_KEY = os.getenv("VIRUSTOTAL_API_KEY")
+        self.VIRUSTOTAL_BASE_URL = os.getenv("VIRUSTOTAL_BASE_URL", "https://www.virustotal.com/api/v3")
+        self.VIRUSTOTAL_RATE_LIMIT = int(os.getenv("VIRUSTOTAL_RATE_LIMIT", 4))
+        self.VIRUSTOTAL_TIMEOUT = int(os.getenv("VIRUSTOTAL_TIMEOUT", 30))
+        self.VIRUSTOTAL_MAX_RETRIES = int(os.getenv("VIRUSTOTAL_MAX_RETRIES", 3))
+        
+        # Security Configuration
+        self.HASH_SALT = os.getenv("HASH_SALT", "default_salt_change_in_production")
+        
+        # Performance Settings (Enhanced for v3.1)
+        self.MAX_CONTENT_LENGTH = int(os.getenv("MAX_CONTENT_LENGTH", 10000))
+        self.MAX_BATCH_SIZE = int(os.getenv("MAX_BATCH_SIZE", 10))
+        self.CACHE_TTL = int(os.getenv("CACHE_TTL", 3600))
+        self.REQUEST_TIMEOUT = int(os.getenv("REQUEST_TIMEOUT", 15))
+        self.HEALTH_CHECK_TIMEOUT = int(os.getenv("HEALTH_CHECK_TIMEOUT", 10))
+        
+        # Rate Limiting
+        self.RATE_LIMIT_REQUESTS = int(os.getenv("RATE_LIMIT_REQUESTS", 100))
+        self.RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", 60))
+        
+        # CORS Settings
+        self.ALLOWED_ORIGINS = self._get_allowed_origins()
+        
+        # Feature Flags (Enhanced for v3.1)
+        self.database_configured = bool(self.MONGODB_URI)
+        self.virustotal_configured = bool(self.VIRUSTOTAL_API_KEY)
+        self.ai_configured = bool(self.GROQ_API_KEY)
+        self.multi_ai_enabled = bool(self.GROQ_API_KEY and (self.ANTHROPIC_API_KEY or self.OPENAI_API_KEY))
+        self.is_production = self.ENVIRONMENT.lower() == "production"
+        self.is_development = self.ENVIRONMENT.lower() == "development"
+        
+        logger.info(f"⚙️ ViralSafe v{self.API_VERSION} configuration loaded for {self.ENVIRONMENT} environment")
+        
+    def _get_allowed_origins(self) -> list:
+        """Get CORS allowed origins based on environment"""
+        base_origins = [
+            "https://viralsafe-platform-free.vercel.app",
+            "https://gzeu.github.io",
+            "https://viralsafe-platform-free-api.onrender.com"
+        ]
+        
+        if not self.is_production:
+            base_origins.extend([
+                "http://localhost:3000",
+                "http://localhost:3001", 
+                "http://localhost:5173",
+                "http://127.0.0.1:3000"
+            ])
+        
+        return base_origins
     
-    # VirusTotal API Configuration
-    VIRUSTOTAL_API_KEY: str = os.getenv("VIRUSTOTAL_API_KEY", "")
-    VIRUSTOTAL_BASE_URL: str = os.getenv("VIRUSTOTAL_BASE_URL", "https://www.virustotal.com/api/v3")
-    VIRUSTOTAL_RATE_LIMIT: int = int(os.getenv("VIRUSTOTAL_RATE_LIMIT", "4"))  # requests per minute (free tier)
-    VIRUSTOTAL_TIMEOUT: int = int(os.getenv("VIRUSTOTAL_TIMEOUT", "30"))  # seconds
-    VIRUSTOTAL_MAX_RETRIES: int = int(os.getenv("VIRUSTOTAL_MAX_RETRIES", "3"))
-    
-    # Security Configuration
-    HASH_SALT: str = os.getenv("HASH_SALT", "default_salt_change_in_production")
-    ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
-    
-    # Application Configuration
-    PORT: int = int(os.getenv("PORT", "10000"))  # Render.com default
-    LOG_LEVEL: str = os.getenv("LOG_LEVEL", "info")
-    API_VERSION: str = "1.0.0"
-    API_TITLE: str = "ViralSafe API"
-    
-    # CORS Configuration
-    ALLOWED_ORIGINS: list = [
-        "https://viralsafe-platform-free.vercel.app",
-        "https://gzeu.github.io",
-        "http://localhost:3000",
-        "http://localhost:5173"
-    ]
-    
-    # Rate Limiting
-    RATE_LIMIT_REQUESTS: int = int(os.getenv("RATE_LIMIT_REQUESTS", "100"))  # requests per minute per IP
-    RATE_LIMIT_WINDOW: int = int(os.getenv("RATE_LIMIT_WINDOW", "60"))  # seconds
-    
-    # Content Analysis Configuration
-    MAX_CONTENT_LENGTH: int = int(os.getenv("MAX_CONTENT_LENGTH", "5000"))
-    MAX_BATCH_SIZE: int = int(os.getenv("MAX_BATCH_SIZE", "10"))
-    CACHE_TTL: int = int(os.getenv("CACHE_TTL", "3600"))  # 1 hour
-    
-    # Health Check Configuration
-    HEALTH_CHECK_TIMEOUT: int = int(os.getenv("HEALTH_CHECK_TIMEOUT", "10"))  # seconds
-    DATABASE_PING_TIMEOUT: int = int(os.getenv("DATABASE_PING_TIMEOUT", "5"))  # seconds
-    
-    @property
-    def is_production(self) -> bool:
-        return self.ENVIRONMENT == "production"
-    
-    @property
-    def is_development(self) -> bool:
-        return self.ENVIRONMENT == "development"
-    
-    @property
-    def database_configured(self) -> bool:
-        return bool(self.MONGODB_URI)
-    
-    @property
-    def virustotal_configured(self) -> bool:
-        return bool(self.VIRUSTOTAL_API_KEY)
-    
-    def validate_configuration(self) -> dict:
-        """Validate critical configuration and return status"""
-        status = {
-            "mongodb": self.database_configured,
-            "virustotal": self.virustotal_configured,
+    def validate_configuration(self) -> Dict[str, Any]:
+        """Enhanced configuration validation for v3.1"""
+        validation_result = {
+            "service": "ViralSafe Enhanced API",
+            "version": self.API_VERSION,
             "environment": self.ENVIRONMENT,
             "port": self.PORT,
-            "ready": False
+            "ready": True,  # Always ready with graceful degradation
+            "services": {
+                "mongodb": self.database_configured,
+                "virustotal": self.virustotal_configured
+            },
+            "ai_providers": {
+                "groq": bool(self.GROQ_API_KEY),
+                "anthropic": bool(self.ANTHROPIC_API_KEY),
+                "openai": bool(self.OPENAI_API_KEY),
+                "total_configured": sum([
+                    bool(self.GROQ_API_KEY),
+                    bool(self.ANTHROPIC_API_KEY), 
+                    bool(self.OPENAI_API_KEY)
+                ])
+            },
+            "features_enabled": {
+                "database_storage": self.database_configured,
+                "ai_analysis": self.ai_configured,
+                "multi_ai_ensemble": self.multi_ai_enabled,
+                "advanced_scanning": True,
+                "threat_intelligence": self.ai_configured,
+                "real_time_monitoring": True,
+                "batch_processing": True,
+                "performance_optimization": True
+            },
+            "warnings": [],
+            "fallback_mode": False
         }
         
-        # Application can run with basic functionality even without MongoDB or VirusTotal
-        # Only MongoDB is considered critical for full functionality
-        status["ready"] = True  # Always ready, graceful degradation
-        
-        # Add configuration warnings
+        # Add warnings for missing optional configurations
         warnings = []
         if not self.database_configured:
-            warnings.append("MongoDB not configured - using in-memory storage")
+            warnings.append("MongoDB not configured - analytics and storage disabled")
+        if not self.ai_configured:
+            warnings.append("AI providers not configured - using basic fallback analysis")
         if not self.virustotal_configured:
-            warnings.append("VirusTotal API not configured - URL scanning disabled")
-        if self.HASH_SALT == "default_salt_change_in_production":
-            warnings.append("Default salt in use - change for production")
+            warnings.append("VirusTotal not configured - URL scanning disabled")
+        if self.HASH_SALT == "default_salt_change_in_production" and self.is_production:
+            warnings.append("Default salt in production - security risk")
+        if not self.multi_ai_enabled and self.ai_configured:
+            warnings.append("Single AI provider configured - consider adding secondary providers for ensemble analysis")
         
-        status["warnings"] = warnings
-        status["fallback_mode"] = len(warnings) > 0
+        validation_result["warnings"] = warnings
+        validation_result["fallback_mode"] = len(warnings) > 0
         
-        return status
+        return validation_result
     
-    def get_virustotal_config(self) -> dict:
-        """Get VirusTotal configuration for logging"""
+    def get_database_config(self) -> Dict[str, Any]:
+        """Get database configuration (sanitized)"""
+        return {
+            "uri_configured": bool(self.MONGODB_URI),
+            "database_name": self.MONGODB_DB_NAME,
+            "ping_timeout": self.DATABASE_PING_TIMEOUT,
+            "status": "configured" if self.database_configured else "not_configured"
+        }
+    
+    def get_ai_config(self) -> Dict[str, Any]:
+        """Get AI provider configuration (sanitized)"""
+        return {
+            "providers": {
+                "groq": {
+                    "configured": bool(self.GROQ_API_KEY),
+                    "priority": 1,
+                    "status": "primary" if self.GROQ_API_KEY else "not_configured"
+                },
+                "anthropic": {
+                    "configured": bool(self.ANTHROPIC_API_KEY),
+                    "priority": 2,
+                    "status": "secondary" if self.ANTHROPIC_API_KEY else "not_configured"
+                },
+                "openai": {
+                    "configured": bool(self.OPENAI_API_KEY),
+                    "priority": 3,
+                    "status": "tertiary" if self.OPENAI_API_KEY else "not_configured"
+                }
+            },
+            "ensemble_enabled": self.multi_ai_enabled,
+            "fallback_enabled": True,
+            "total_providers": sum([
+                bool(self.GROQ_API_KEY),
+                bool(self.ANTHROPIC_API_KEY),
+                bool(self.OPENAI_API_KEY)
+            ])
+        }
+    
+    def get_virustotal_config(self) -> Dict[str, Any]:
+        """Get VirusTotal configuration (sanitized)"""
         return {
             "api_key_configured": bool(self.VIRUSTOTAL_API_KEY),
             "base_url": self.VIRUSTOTAL_BASE_URL,
             "rate_limit": self.VIRUSTOTAL_RATE_LIMIT,
             "timeout": self.VIRUSTOTAL_TIMEOUT,
-            "max_retries": self.VIRUSTOTAL_MAX_RETRIES
+            "max_retries": self.VIRUSTOTAL_MAX_RETRIES,
+            "status": "configured" if self.virustotal_configured else "not_configured"
         }
     
-    def get_mongodb_config(self) -> dict:
-        """Get MongoDB configuration for logging (without sensitive data)"""
+    def get_performance_config(self) -> Dict[str, Any]:
+        """Get performance configuration"""
         return {
-            "uri_configured": bool(self.MONGODB_URI),
-            "database_name": self.MONGODB_DB_NAME,
-            "ping_timeout": self.DATABASE_PING_TIMEOUT
+            "max_content_length": self.MAX_CONTENT_LENGTH,
+            "max_batch_size": self.MAX_BATCH_SIZE,
+            "cache_ttl": self.CACHE_TTL,
+            "request_timeout": self.REQUEST_TIMEOUT,
+            "health_check_timeout": self.HEALTH_CHECK_TIMEOUT,
+            "rate_limiting": {
+                "requests_per_minute": self.RATE_LIMIT_REQUESTS,
+                "window_seconds": self.RATE_LIMIT_WINDOW
+            }
+        }
+    
+    def is_feature_enabled(self, feature: str) -> bool:
+        """Check if a specific feature is enabled"""
+        feature_map = {
+            "database": self.database_configured,
+            "ai_analysis": self.ai_configured,
+            "multi_ai": self.multi_ai_enabled,
+            "virustotal": self.virustotal_configured,
+            "advanced_scanning": True,
+            "threat_intelligence": self.ai_configured,
+            "real_time_monitoring": True,
+            "batch_processing": True,
+            "performance_optimization": True,
+            "analytics": self.database_configured
+        }
+        return feature_map.get(feature, False)
+    
+    def get_system_info(self) -> Dict[str, Any]:
+        """Get comprehensive system information"""
+        return {
+            "service": self.API_TITLE,
+            "version": self.API_VERSION,
+            "environment": self.ENVIRONMENT,
+            "port": self.PORT,
+            "log_level": self.LOG_LEVEL,
+            "production": self.is_production,
+            "development": self.is_development,
+            "cors_origins": len(self.ALLOWED_ORIGINS),
+            "features": {
+                "total_enabled": sum([
+                    self.database_configured,
+                    self.ai_configured,
+                    self.virustotal_configured,
+                    True,  # advanced_scanning always enabled
+                    True,  # real_time_monitoring always enabled
+                    True   # batch_processing always enabled
+                ]),
+                "ai_providers": sum([
+                    bool(self.GROQ_API_KEY),
+                    bool(self.ANTHROPIC_API_KEY),
+                    bool(self.OPENAI_API_KEY)
+                ])
+            }
         }
 
 # Global settings instance
 settings = Settings()
+
+# Enhanced validation on module load
+config_validation = settings.validate_configuration()
+if config_validation["warnings"]:
+    for warning in config_validation["warnings"]:
+        logger.warning(f"⚠️ Config Warning: {warning}")
+
+# Log successful configuration
+logger.info(f"✅ ViralSafe v{settings.API_VERSION} configuration validated successfully")
+logger.info(f"🎨 Features enabled: {sum(config_validation['features_enabled'].values())}/8")
+logger.info(f"🤖 AI providers configured: {config_validation['ai_providers']['total_configured']}/3")
