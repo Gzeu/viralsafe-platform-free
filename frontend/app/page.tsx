@@ -3,7 +3,20 @@
 import { useState, useEffect } from 'react'
 import { Shield, AlertTriangle, CheckCircle, TrendingUp, Users, Globe, ExternalLink, Database, Activity, Clock, Zap, Eye, FileText, AlertCircle, Brain } from 'lucide-react'
 import AdvancedSecurity from '../components/AdvancedSecurity'
-import { ThemeToggle } from '../components/ThemeToggle'
+import dynamic from 'next/dynamic'
+
+// Dynamically import ClientThemeToggle to prevent SSR issues
+const ClientThemeToggle = dynamic(
+  () => import('../components/ClientThemeToggle').then((mod) => ({ default: mod.ClientThemeToggle })),
+  { 
+    ssr: false,
+    loading: () => (
+      <button className="relative p-2 rounded-lg bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed transition-all duration-300">
+        <div className="w-5 h-5" />
+      </button>
+    )
+  }
+)
 
 interface AnalysisResult {
   id: string
@@ -213,7 +226,7 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center space-x-6">
-              <ThemeToggle />
+              <ClientThemeToggle />
               {health && (
                 <div className="flex items-center space-x-2 text-sm">
                   <span className={getStatusColor(health.status)}>●</span>
