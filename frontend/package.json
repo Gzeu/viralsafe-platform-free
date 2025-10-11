@@ -1,6 +1,7 @@
 {
-  "name": "viralsafe-frontend",
-  "version": "0.1.0",
+  "name": "viralsafe-platform-free-frontend",
+  "version": "3.1.0",
+  "description": "ViralSafe Platform Enhanced - AI-Powered Content Safety Analysis v3.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -26,5 +27,13 @@
   "devDependencies": {
     "eslint": "^8.54.0",
     "eslint-config-next": "14.0.3"
-  }
+  },
+  "keywords": ["security-analysis", "ai-powered", "content-safety", "nextjs", "vercel", "enhanced-v3.1"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Gzeu/viralsafe-platform-free.git"
+  },
+  "homepage": "https://viralsafe-platform-free.vercel.app",
+  "author": "Gzeu",
+  "license": "MIT"
 }
