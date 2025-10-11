@@ -10,7 +10,7 @@ from config import settings
 logger = logging.getLogger(__name__)
 
 class VirusTotalAPI:
-    """VirusTotal API integration with improved error handling and stable endpoints"""
+    """VirusTotal API integration with smart health monitoring via real scans"""
     
     def __init__(self):
         self.base_url = settings.VIRUSTOTAL_BASE_URL
@@ -18,9 +18,18 @@ class VirusTotalAPI:
         self.rate_limit = settings.VIRUSTOTAL_RATE_LIMIT
         self.request_times = []  # Track request timestamps for rate limiting
         self.client: Optional[httpx.AsyncClient] = None
-        self.is_healthy = False
         
-        # Stable test endpoints that work reliably with free API
+        # Smart health tracking - updated only when real scans happen
+        self.health_cache = {
+            "status": "unknown",
+            "last_check": None,
+            "last_successful_scan": None,
+            "consecutive_failures": 0,
+            "total_scans": 0,
+            "successful_scans": 0
+        }
+        
+        # Stable test endpoints for initialization only
         self.test_endpoints = [
             "/domains/google.com",
             "/ip_addresses/8.8.8.8",
@@ -32,7 +41,7 @@ class VirusTotalAPI:
         try:
             if not self.api_key:
                 logger.warning("⚠️ VirusTotal API key not configured - running in degraded mode")
-                self.is_healthy = False
+                self.health_cache["status"] = "not_configured"
                 return False
             
             self.client = httpx.AsyncClient(
@@ -43,25 +52,27 @@ class VirusTotalAPI:
                 }
             )
             
-            # Test API connection with stable endpoints instead of /users/self
-            connection_success = await self._test_connection()
+            # One-time connection test during initialization only
+            connection_success = await self._test_connection_once()
             
             if connection_success:
                 logger.info("✅ VirusTotal API initialized successfully")
-                self.is_healthy = True
+                self.health_cache["status"] = "connected"
+                self.health_cache["last_check"] = datetime.utcnow().isoformat()
                 return True
             else:
-                logger.warning("⚠️ VirusTotal API connection failed - running in degraded mode")
-                self.is_healthy = False
+                logger.warning("⚠️ VirusTotal API connection failed during init - will retry on first scan")
+                self.health_cache["status"] = "init_failed"
                 return False
                 
         except Exception as e:
             logger.error(f"❌ VirusTotal API initialization failed: {e}")
-            self.is_healthy = False
+            self.health_cache["status"] = "error"
+            self.health_cache["error"] = str(e)
             return False
     
-    async def _test_connection(self) -> bool:
-        """Test connection using stable endpoints that work with free tier"""
+    async def _test_connection_once(self) -> bool:
+        """Test connection using stable endpoints - ONLY during initialization"""
         for endpoint in self.test_endpoints:
             try:
                 logger.info(f"🔍 Testing VirusTotal endpoint: {endpoint}")
@@ -93,6 +104,38 @@ class VirusTotalAPI:
         logger.error("❌ All VirusTotal test endpoints failed")
         return False
     
+    def _update_health_from_scan(self, success: bool, error_msg: str = None):
+        """Update health status based on real scan results"""
+        now = datetime.utcnow().isoformat()
+        
+        self.health_cache["last_check"] = now
+        self.health_cache["total_scans"] += 1
+        
+        if success:
+            self.health_cache["status"] = "connected"
+            self.health_cache["last_successful_scan"] = now
+            self.health_cache["successful_scans"] += 1
+            self.health_cache["consecutive_failures"] = 0
+            
+            # Remove error if it existed
+            if "error" in self.health_cache:
+                del self.health_cache["error"]
+                
+            logger.info("✅ VirusTotal health updated: Connected (via real scan)")
+        else:
+            self.health_cache["consecutive_failures"] += 1
+            
+            # Determine status based on failure pattern
+            if self.health_cache["consecutive_failures"] >= 3:
+                self.health_cache["status"] = "error"
+            else:
+                self.health_cache["status"] = "degraded"
+            
+            if error_msg:
+                self.health_cache["error"] = error_msg
+            
+            logger.warning(f"⚠️ VirusTotal health updated: {self.health_cache['status']} (consecutive failures: {self.health_cache['consecutive_failures']})")
+    
     async def close(self):
         """Close HTTP client"""
         if self.client:
@@ -119,11 +162,15 @@ class VirusTotalAPI:
         self.request_times.append(now)
     
     async def scan_url(self, url: str) -> Optional[Dict]:
-        """Submit URL for scanning with fallback handling"""
+        """Submit URL for scanning with health status update"""
+        scan_success = False
+        error_msg = None
+        
         try:
-            if not self.is_healthy or not self.client:
-                logger.warning("⚠️ VirusTotal unavailable - skipping URL scan")
-                return self._create_fallback_response("url_scan", {"url": url})
+            if not self.client:
+                error_msg = "Client not initialized"
+                logger.warning("⚠️ VirusTotal client not initialized - skipping URL scan")
+                return self._create_fallback_response("url_scan", {"url": url, "error": error_msg})
             
             await self._rate_limit_check()
             
@@ -139,30 +186,43 @@ class VirusTotalAPI:
                 result = response.json()
                 scan_id = result.get("data", {}).get("id")
                 
+                scan_success = True
                 logger.info(f"✅ URL scan submitted: {scan_id}")
+                
                 return {
                     "scan_id": scan_id, 
                     "url": url, 
                     "submitted_at": datetime.utcnow().isoformat(),
-                    "status": "submitted"
+                    "status": "submitted",
+                    "fallback": False
                 }
             else:
-                logger.error(f"❌ URL scan failed: HTTP {response.status_code}")
-                return self._create_fallback_response("url_scan", {"url": url, "error": f"HTTP {response.status_code}"})
+                error_msg = f"HTTP {response.status_code}"
+                logger.error(f"❌ URL scan failed: {error_msg}")
+                return self._create_fallback_response("url_scan", {"url": url, "error": error_msg})
                 
         except asyncio.TimeoutError:
+            error_msg = "timeout"
             logger.error(f"⏰ URL scan timeout for: {url}")
-            return self._create_fallback_response("url_scan", {"url": url, "error": "timeout"})
+            return self._create_fallback_response("url_scan", {"url": url, "error": error_msg})
         except Exception as e:
+            error_msg = str(e)
             logger.error(f"❌ URL scan error: {e}")
-            return self._create_fallback_response("url_scan", {"url": url, "error": str(e)})
+            return self._create_fallback_response("url_scan", {"url": url, "error": error_msg})
+        finally:
+            # Update health status based on scan result
+            self._update_health_from_scan(scan_success, error_msg)
     
     async def get_url_report(self, url: str) -> Optional[Dict]:
-        """Get URL analysis report with fallback handling"""
+        """Get URL analysis report with health status update"""
+        scan_success = False
+        error_msg = None
+        
         try:
-            if not self.is_healthy or not self.client:
-                logger.warning("⚠️ VirusTotal unavailable - using fallback analysis")
-                return self._create_fallback_response("url_report", {"url": url})
+            if not self.client:
+                error_msg = "Client not initialized"
+                logger.warning("⚠️ VirusTotal client not initialized - using fallback analysis")
+                return self._create_fallback_response("url_report", {"url": url, "error": error_msg})
             
             await self._rate_limit_check()
             
@@ -175,29 +235,41 @@ class VirusTotalAPI:
             )
             
             if response.status_code == 200:
+                scan_success = True
                 return self._parse_url_report(response.json())
             elif response.status_code == 404:
                 # URL not found, submit for scanning
                 logger.info(f"🔍 URL not found in VT database, submitting for scan: {url}")
-                await self.scan_url(url)
+                await self.scan_url(url)  # This will update health status
                 return self._create_fallback_response("url_report", {"url": url, "status": "not_found"})
             else:
-                logger.error(f"❌ URL report failed: HTTP {response.status_code}")
-                return self._create_fallback_response("url_report", {"url": url, "error": f"HTTP {response.status_code}"})
+                error_msg = f"HTTP {response.status_code}"
+                logger.error(f"❌ URL report failed: {error_msg}")
+                return self._create_fallback_response("url_report", {"url": url, "error": error_msg})
                 
         except asyncio.TimeoutError:
+            error_msg = "timeout"
             logger.error(f"⏰ URL report timeout for: {url}")
-            return self._create_fallback_response("url_report", {"url": url, "error": "timeout"})
+            return self._create_fallback_response("url_report", {"url": url, "error": error_msg})
         except Exception as e:
+            error_msg = str(e)
             logger.error(f"❌ URL report error: {e}")
-            return self._create_fallback_response("url_report", {"url": url, "error": str(e)})
+            return self._create_fallback_response("url_report", {"url": url, "error": error_msg})
+        finally:
+            # Update health status only if we made an actual request (not for 404 case handled by scan_url)
+            if error_msg or scan_success:
+                self._update_health_from_scan(scan_success, error_msg)
     
     async def scan_file_hash(self, file_hash: str) -> Optional[Dict]:
-        """Get file hash analysis report with fallback handling"""
+        """Get file hash analysis report with health status update"""
+        scan_success = False
+        error_msg = None
+        
         try:
-            if not self.is_healthy or not self.client:
-                logger.warning("⚠️ VirusTotal unavailable - using fallback analysis")
-                return self._create_fallback_response("file_hash", {"hash": file_hash})
+            if not self.client:
+                error_msg = "Client not initialized"
+                logger.warning("⚠️ VirusTotal client not initialized - using fallback analysis")
+                return self._create_fallback_response("file_hash", {"hash": file_hash, "error": error_msg})
             
             await self._rate_limit_check()
             
@@ -207,20 +279,29 @@ class VirusTotalAPI:
             )
             
             if response.status_code == 200:
+                scan_success = True
                 return self._parse_file_report(response.json())
             elif response.status_code == 404:
+                # Set scan_success = True because the API call worked, just no data
+                scan_success = True
                 logger.info(f"🔍 File hash not found in VT database: {file_hash}")
                 return self._create_fallback_response("file_hash", {"hash": file_hash, "status": "not_found"})
             else:
-                logger.error(f"❌ File hash report failed: HTTP {response.status_code}")
-                return self._create_fallback_response("file_hash", {"hash": file_hash, "error": f"HTTP {response.status_code}"})
+                error_msg = f"HTTP {response.status_code}"
+                logger.error(f"❌ File hash report failed: {error_msg}")
+                return self._create_fallback_response("file_hash", {"hash": file_hash, "error": error_msg})
                 
         except asyncio.TimeoutError:
+            error_msg = "timeout"
             logger.error(f"⏰ File hash timeout for: {file_hash}")
-            return self._create_fallback_response("file_hash", {"hash": file_hash, "error": "timeout"})
+            return self._create_fallback_response("file_hash", {"hash": file_hash, "error": error_msg})
         except Exception as e:
+            error_msg = str(e)
             logger.error(f"❌ File hash error: {e}")
-            return self._create_fallback_response("file_hash", {"hash": file_hash, "error": str(e)})
+            return self._create_fallback_response("file_hash", {"hash": file_hash, "error": error_msg})
+        finally:
+            # Update health status based on scan result
+            self._update_health_from_scan(scan_success, error_msg)
     
     def _create_fallback_response(self, scan_type: str, metadata: Dict) -> Dict:
         """Create fallback response when VirusTotal is unavailable"""
@@ -312,77 +393,66 @@ class VirusTotalAPI:
             return self._create_fallback_response("file_hash", {"parse_error": str(e)})
     
     async def get_api_quota(self) -> Dict:
-        """Get API quota information with fallback"""
-        try:
-            if not self.is_healthy or not self.client:
-                return {"error": "VirusTotal unavailable", "fallback": True}
-            
-            # Try one of the stable endpoints instead of /users/self
-            response = await self.client.get(
-                f"{self.base_url}/domains/google.com",
-                timeout=10.0
-            )
-            
-            if response.status_code == 200:
-                return {
-                    "status": "available",
-                    "remaining_requests": self.rate_limit - len(self.request_times),
-                    "rate_limit": self.rate_limit,
-                    "fallback": False
-                }
-            else:
-                return {"error": f"HTTP {response.status_code}", "fallback": True}
-                
-        except Exception as e:
-            return {"error": str(e), "fallback": True}
+        """Get API quota information from cached health data"""
+        return {
+            "status": self.health_cache["status"],
+            "remaining_requests": max(0, self.rate_limit - len(self.request_times)),
+            "rate_limit": self.rate_limit,
+            "total_scans": self.health_cache["total_scans"],
+            "successful_scans": self.health_cache["successful_scans"],
+            "fallback": self.health_cache["status"] not in ["connected"]
+        }
     
     async def health_check(self) -> Dict:
-        """Comprehensive health check with stable endpoints"""
-        try:
-            if not self.api_key:
-                return {
-                    "status": "not_configured", 
-                    "error": "API key not set",
-                    "fallback": True
-                }
-            
-            if not self.client:
-                return {
-                    "status": "not_initialized", 
-                    "error": "Client not initialized",
-                    "fallback": True
-                }
-            
-            # Test with stable endpoints
-            start_time = time.time()
-            connection_success = await self._test_connection()
-            response_time = (time.time() - start_time) * 1000
-            
-            if connection_success:
-                self.is_healthy = True
-                return {
-                    "status": "connected",
-                    "response_time_ms": round(response_time, 2),
-                    "rate_limit_remaining": self.rate_limit - len(self.request_times),
-                    "test_endpoints": self.test_endpoints,
-                    "fallback": False
-                }
-            else:
-                self.is_healthy = False
-                return {
-                    "status": "error",
-                    "error": "Connection test failed",
-                    "response_time_ms": round(response_time, 2),
-                    "fallback": True
-                }
-                
-        except Exception as e:
-            self.is_healthy = False
-            return {
-                "status": "error", 
-                "error": str(e),
-                "fallback": True
-            }
+        """Smart health check using cached data from real scans"""
+        now = datetime.utcnow()
+        
+        # Calculate success rate
+        success_rate = 0.0
+        if self.health_cache["total_scans"] > 0:
+            success_rate = self.health_cache["successful_scans"] / self.health_cache["total_scans"]
+        
+        # Check if we have recent data
+        last_check = self.health_cache.get("last_check")
+        is_stale = False
+        
+        if last_check:
+            last_check_dt = datetime.fromisoformat(last_check.replace('Z', '+00:00').replace('+00:00', ''))
+            time_since_check = (now - last_check_dt).total_seconds()
+            is_stale = time_since_check > 3600  # 1 hour
+        
+        # Prepare health response
+        health_data = {
+            "status": self.health_cache["status"],
+            "last_check": self.health_cache["last_check"],
+            "last_successful_scan": self.health_cache["last_successful_scan"],
+            "total_scans": self.health_cache["total_scans"],
+            "successful_scans": self.health_cache["successful_scans"],
+            "success_rate": round(success_rate, 3),
+            "consecutive_failures": self.health_cache["consecutive_failures"],
+            "rate_limit_remaining": max(0, self.rate_limit - len(self.request_times)),
+            "is_stale": is_stale,
+            "monitoring_method": "smart_scan_based",
+            "api_savings": "100% - No dedicated health checks!"
+        }
+        
+        # Add error if present
+        if "error" in self.health_cache:
+            health_data["error"] = self.health_cache["error"]
+        
+        # Add message based on status
+        if self.health_cache["status"] == "not_configured":
+            health_data["message"] = "VirusTotal API key not configured"
+        elif self.health_cache["status"] == "connected":
+            health_data["message"] = "VirusTotal operational (verified via real scans)"
+        elif self.health_cache["status"] == "degraded":
+            health_data["message"] = "VirusTotal experiencing issues (degraded performance)"
+        elif self.health_cache["status"] == "error":
+            health_data["message"] = "VirusTotal unavailable (multiple consecutive failures)"
+        else:
+            health_data["message"] = "VirusTotal status unknown (no scans performed yet)"
+        
+        return health_data
 
 # Global VirusTotal instance
 vt_api = VirusTotalAPI()
