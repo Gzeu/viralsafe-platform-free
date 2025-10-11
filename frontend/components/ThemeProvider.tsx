@@ -30,24 +30,34 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   // Load theme from localStorage on mount
   useEffect(() => {
-    const savedTheme = localStorage.getItem('viralsafe-theme') as Theme
-    if (savedTheme) {
-      setTheme(savedTheme)
-    } else {
-      // Check system preference
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-      setTheme(systemDark ? 'dark' : 'light')
+    try {
+      const savedTheme = localStorage.getItem('viralsafe-theme') as Theme
+      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+        setTheme(savedTheme)
+      } else {
+        // Check system preference
+        const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+        setTheme(systemDark ? 'dark' : 'light')
+      }
+    } catch (error) {
+      // Fallback in case localStorage is not available
+      console.warn('Could not access localStorage for theme:', error)
     }
     setMounted(true)
   }, [])
 
   // Apply theme to document
   useEffect(() => {
-    if (mounted) {
+    if (mounted && typeof window !== 'undefined') {
       const root = document.documentElement
       root.classList.remove('light', 'dark')
       root.classList.add(theme)
-      localStorage.setItem('viralsafe-theme', theme)
+      
+      try {
+        localStorage.setItem('viralsafe-theme', theme)
+      } catch (error) {
+        console.warn('Could not save theme to localStorage:', error)
+      }
     }
   }, [theme, mounted])
 
@@ -57,14 +67,18 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
 
   const isDark = theme === 'dark'
 
-  // Prevent hydration mismatch
+  // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) {
-    return <div className="min-h-screen bg-white">{children}</div>
+    return (
+      <div className="min-h-screen bg-white transition-colors duration-300">
+        {children}
+      </div>
+    )
   }
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, isDark }}>
-      <div className={theme}>
+      <div className={`${theme} transition-colors duration-300`}>
         {children}
       </div>
     </ThemeContext.Provider>
