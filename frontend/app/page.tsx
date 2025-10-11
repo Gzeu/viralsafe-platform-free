@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, AlertTriangle, CheckCircle, TrendingUp, Users, Globe, ExternalLink, Database, Activity, Clock, Zap, Eye, FileText, AlertCircle } from 'lucide-react'
+import { Shield, AlertTriangle, CheckCircle, TrendingUp, Users, Globe, ExternalLink, Database, Activity, Clock, Zap, Eye, FileText, AlertCircle, Brain } from 'lucide-react'
+import AdvancedSecurity from '../components/AdvancedSecurity'
 
 interface AnalysisResult {
   id: string
@@ -77,7 +78,7 @@ export default function Home() {
   const [health, setHealth] = useState<HealthStatus | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [activeTab, setActiveTab] = useState<'analyze' | 'health' | 'analytics'>('analyze')
+  const [activeTab, setActiveTab] = useState<'analyze' | 'advanced' | 'health' | 'analytics'>('analyze')
 
   // Load initial data
   useEffect(() => {
@@ -206,8 +207,8 @@ export default function Home() {
             <div className="flex items-center space-x-3">
               <Shield className="w-8 h-8 text-blue-600" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">ViralSafe Platform</h1>
-                <p className="text-sm text-gray-600">Advanced Content Safety Analysis with AI</p>
+                <h1 className="text-2xl font-bold text-gray-900">ViralSafe Platform v3.1</h1>
+                <p className="text-sm text-gray-600">Enhanced AI-Powered Content Safety Analysis</p>
               </div>
             </div>
             <div className="flex items-center space-x-6">
@@ -215,11 +216,14 @@ export default function Home() {
                 <div className="flex items-center space-x-2 text-sm">
                   <span className={getStatusColor(health.status)}>●</span>
                   <span>System {health.status}</span>
+                  <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    v{health.version || '3.1.0'} Enhanced
+                  </span>
                 </div>
               )}
               <div className="text-right text-sm text-gray-500">
-                <div>🛡️ MongoDB + VirusTotal</div>
-                <div>🌍 Open Source</div>
+                <div>🛡️ MongoDB + VirusTotal + AI</div>
+                <div>🌍 Open Source Enhanced</div>
               </div>
             </div>
           </div>
@@ -239,6 +243,17 @@ export default function Home() {
           >
             <Shield className="w-4 h-4 inline mr-2" />
             Content Analysis
+          </button>
+          <button
+            onClick={() => setActiveTab('advanced')}
+            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+              activeTab === 'advanced'
+                ? 'bg-white text-purple-600 shadow-sm'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            <Brain className="w-4 h-4 inline mr-2" />
+            🔒 Advanced Security
           </button>
           <button
             onClick={() => setActiveTab('health')}
@@ -540,13 +555,16 @@ export default function Home() {
           </div>
         )}
 
+        {/* Advanced Security Tab */}
+        {activeTab === 'advanced' && <AdvancedSecurity />}
+
         {/* System Health Tab */}
         {activeTab === 'health' && health && (
           <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-lg border p-6">
               <h2 className="text-xl font-semibold mb-4 flex items-center">
                 <Activity className="w-5 h-5 mr-2 text-green-600" />
-                System Health Status
+                System Health Status v3.1
               </h2>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -675,7 +693,7 @@ export default function Home() {
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-semibold flex items-center">
                   <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
-                  Platform Analytics
+                  Platform Analytics v3.1
                 </h2>
                 <button
                   onClick={loadAnalytics}
@@ -724,25 +742,25 @@ export default function Home() {
 
                   {/* Summary Stats */}
                   <div className="col-span-1 md:col-span-2 lg:col-span-1">
-                    <h3 className="font-medium mb-3">Summary</h3>
+                    <h3 className="font-medium mb-3">Enhanced Summary</h3>
                     <div className="space-y-4">
                       <div className="text-center p-4 bg-blue-50 rounded-lg">
                         <div className="text-2xl font-bold text-blue-600">
                           {analytics.total_analyses}
                         </div>
-                        <div className="text-sm text-blue-700">Total Analyses</div>
+                        <div className="text-sm text-blue-700">Total Enhanced Analyses</div>
                       </div>
                       <div className="text-center p-4 bg-purple-50 rounded-lg">
                         <div className="text-2xl font-bold text-purple-600">
                           {(analytics.avg_risk_score * 100).toFixed(1)}%
                         </div>
-                        <div className="text-sm text-purple-700">Avg Risk Score</div>
+                        <div className="text-sm text-purple-700">Avg Risk Score v3.1</div>
                       </div>
                       <div className="text-center p-4 bg-gray-50 rounded-lg">
                         <div className="text-lg font-bold text-gray-600">
                           {analytics.database_status}
                         </div>
-                        <div className="text-xs text-gray-600">Storage Status</div>
+                        <div className="text-xs text-gray-600">Enhanced Storage Status</div>
                       </div>
                     </div>
                   </div>
@@ -750,7 +768,7 @@ export default function Home() {
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Loading analytics data...</p>
+                  <p>Loading enhanced analytics data...</p>
                 </div>
               )}
             </div>
@@ -771,10 +789,10 @@ export default function Home() {
             </a>
           </div>
           <p className="text-sm">
-            🛡️ ViralSafe Platform • MongoDB Atlas + VirusTotal API • Open Source • Built with ❤️ for Internet Safety
+            🛡️ ViralSafe Platform v3.1 Enhanced • MongoDB Atlas + VirusTotal API + Multi-AI • Open Source • Built with ❤️ for Internet Safety
           </p>
           <p className="text-xs">
-            Backend: Render.com • Frontend: Vercel • Database: MongoDB Atlas • Security: VirusTotal
+            Backend: Render.com • Frontend: Vercel • Database: MongoDB Atlas • Security: VirusTotal • AI: Groq + Enhanced Features
           </p>
         </footer>
       </div>
