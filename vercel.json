@@ -1,0 +1,17 @@
+{
+  "buildCommand": "npm run build",
+  "devCommand": "npm run dev",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "env": {
+    "MONGODB_URI": "@mongodb-uri",
+    "VIRUSTOTAL_API_KEY": "@virustotal-api-key",
+    "RATELIMIT_MAX": "@ratelimit-max",
+    "RATELIMIT_WINDOW_MS": "@ratelimit-window-ms"
+  },
+  "functions": {
+    "app/api/*/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}
