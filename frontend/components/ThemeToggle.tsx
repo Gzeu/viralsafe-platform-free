@@ -2,9 +2,25 @@
 
 import { useTheme } from './ThemeProvider'
 import { Moon, Sun } from 'lucide-react'
+import { useEffect, useState } from 'react'
 
 export function ThemeToggle() {
   const { isDark, toggleTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  // Wait for component to be mounted on client
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Prevent hydration mismatch
+  if (!mounted) {
+    return (
+      <button className="relative p-2 rounded-lg transition-all duration-300 ease-in-out bg-gray-100 dark:bg-gray-800 opacity-50 cursor-not-allowed">
+        <div className="w-5 h-5" />
+      </button>
+    )
+  }
 
   return (
     <button
