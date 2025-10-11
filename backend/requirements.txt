@@ -1,59 +1,50 @@
-# Core FastAPI Framework
+# Core FastAPI & Server
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
+pydantic==2.5.0
 python-multipart==0.0.6
 
 # Database & Storage
 motor==3.3.2
 pymongo==4.6.0
 
-# HTTP Clients & Web Scraping
-httpx==0.25.2
+# HTTP Clients & Requests
 aiohttp==3.9.1
 requests==2.31.0
-beautifulsoup4==4.12.2
+httpx==0.25.2
 
 # AI & Machine Learning Providers
 groq==0.4.1
-anthropic==0.7.8
-openai==1.3.0
+anthropic==0.8.1
+openai==1.5.0
 
-# Security & Cryptography
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
-cryptography==46.0.2
-
-# DNS & Network Analysis
-dnspython==2.4.2
-pyopenssl==23.3.0
-
-# Text Processing & Parsing
+# Web Scraping & Content Analysis
+beautifulsoup4==4.12.2
 lxml==4.9.3
 html5lib==1.1
-regex==2023.10.3
 
-# Data Validation & Models
-pydantic==2.5.0
-pydantic-settings==2.1.0
-email-validator==2.1.0
+# Security & Networking
+dnspython==2.4.2
+cryptography==41.0.8
+certifi==2023.11.17
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# Domain & Network Analysis
+python-whois==0.8.0
+ipwhois==1.2.0
+
+# Performance & Caching
+redis==5.0.1
+aiocache==0.12.2
 
 # Environment & Configuration
 python-dotenv==1.0.0
-
-# Performance & Utilities
-orjson==3.9.10
-typing-extensions==4.8.0
-
-# Date & Time Processing
-python-dateutil==2.8.2
+pyyaml==6.0.1
+pydantic-settings==2.1.0
 
 # Monitoring & Logging
 python-json-logger==2.0.4
-loguru==0.7.2
-
-# Rate Limiting & Security
-slowapi==0.1.9
-secure==0.3.0
 
 # Development & Testing
 pytest==7.4.3
@@ -61,6 +52,5 @@ pytest-asyncio==0.21.1
 black==23.11.0
 flake8==6.1.0
 
-# Additional Dependencies for Enhanced Features
-collections-extended==2.0.2
-starlette==0.27.0
+# Rate Limiting & Security
+slowapi==0.1.9
