@@ -38,19 +38,17 @@ export async function POST(request: NextRequest) {
     const aiResult = await classifyText(contentToAnalyze)
     
     // For URLs, optionally run VirusTotal scan (if API key is available)
-    let vtResult = null
+    let vtResult: any = null
+    let scanId: string | null = null
     if (parsed.inputType === 'url' && process.env.VIRUSTOTAL_API_KEY) {
       try {
         const { id } = await scanUrl(parsed.url!)
+        scanId = id
         
         // Quick check (don't wait too long)
         await new Promise(resolve => setTimeout(resolve, 3000))
         vtResult = await fetchVerdict(id)
         
-        if (vtResult.verdict === 'pending') {
-          // Save scan ID for later retrieval
-          vtResult.id = id
-        }
       } catch (error) {
         console.warn('VirusTotal scan failed:', error)
         // Continue without VT results
@@ -105,6 +103,7 @@ export async function POST(request: NextRequest) {
         virustotal_report: vtResult ? {
           verdict: vtResult.verdict,
           stats: vtResult.stats,
+          scan_id: scanId,
           permalink: `https://www.virustotal.com/gui/url-analysis/${btoa(parsed.url || '')}`
         } : undefined
       }
