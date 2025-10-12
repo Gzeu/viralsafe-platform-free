@@ -8,6 +8,18 @@ const AnalysisSchema = new Schema({
   provider: String,
   risk: { score: Number, level: String, reasons: [String] },
   tags: [String],
+  // Screenshot-related fields
+  screenshot: {
+    success: { type: Boolean, default: false },
+    screenshotUrl: String,
+    error: String,
+    metadata: {
+      dimension: String,
+      device: String,
+      format: String,
+      timestamp: String
+    }
+  },
   createdAt: { type: Date, default: Date.now },
 })
 
