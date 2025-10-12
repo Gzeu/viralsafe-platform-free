@@ -37,9 +37,9 @@ export async function POST(request: NextRequest) {
     // Run AI analysis
     const aiResult = await classifyText(contentToAnalyze)
     
-    // For URLs, optionally run VirusTotal scan
+    // For URLs, optionally run VirusTotal scan (if API key is available)
     let vtResult = null
-    if (parsed.inputType === 'url' && parsed.checkUrls && process.env.VIRUSTOTAL_API_KEY) {
+    if (parsed.inputType === 'url' && process.env.VIRUSTOTAL_API_KEY) {
       try {
         const { id } = await scanUrl(parsed.url!)
         
@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
       },
       tags: aiResult.flags,
       processingTimeMs: Date.now() - startTime,
-      userAgent: parsed.userAgent,
+      userAgent: request.headers.get('user-agent') || '',
       ipHash
     })
     
