@@ -5,6 +5,7 @@ import { Analysis } from '../../../lib/models'
 import { classifyText, EnhancedAIResult } from '../../../lib/ai'
 import { computeRisk } from '../../../lib/scoring'
 import { rateLimit } from '../../../lib/ratelimit'
+import { captureScreenshotSmart, validateScreenshotUrl, ScreenshotResult } from '../../../lib/screenshot'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +50,37 @@ export async function POST(req: Request) {
       })
     }
 
+    // Capture screenshot for URL analysis
+    let screenshotResult: ScreenshotResult | undefined
+    if (parsed.inputType === 'url' && parsed.url && parsed.includeScreenshot !== false) {
+      try {
+        // Validate URL for screenshot
+        const urlValidation = validateScreenshotUrl(parsed.url)
+        if (urlValidation.valid) {
+          // Apply custom screenshot options if provided
+          const screenshotOptions = parsed.screenshotOptions || {}
+          screenshotResult = await captureScreenshotSmart(parsed.url, screenshotOptions)
+          
+          // If screenshot failed, add reason to risk analysis
+          if (!screenshotResult.success && screenshotResult.error) {
+            risk.reasons.push(`Screenshot capture failed: ${screenshotResult.error}`)
+          }
+        } else {
+          screenshotResult = {
+            success: false,
+            error: urlValidation.error || 'URL validation failed'
+          }
+          risk.reasons.push(`Screenshot skipped: ${urlValidation.error}`)
+        }
+      } catch (screenshotError: any) {
+        screenshotResult = {
+          success: false,
+          error: `Screenshot service error: ${screenshotError.message}`
+        }
+        risk.reasons.push(`Screenshot error: ${screenshotError.message}`)
+      }
+    }
+
     const doc = await Analysis.create({
       inputType: parsed.inputType,
       platform: parsed.platform || 'general',
@@ -57,6 +89,12 @@ export async function POST(req: Request) {
       provider: aiResult.provider,
       risk,
       tags: aiResult.flags,
+      screenshot: screenshotResult ? {
+        success: screenshotResult.success,
+        screenshotUrl: screenshotResult.screenshotUrl,
+        error: screenshotResult.error,
+        metadata: screenshotResult.metadata
+      } : undefined,
     })
 
     // Enhanced response for advanced features
@@ -64,7 +102,13 @@ export async function POST(req: Request) {
       id: String(doc._id), 
       risk, 
       provider: aiResult.provider, 
-      flags: aiResult.flags 
+      flags: aiResult.flags,
+      screenshot: screenshotResult ? {
+        success: screenshotResult.success,
+        screenshotUrl: screenshotResult.screenshotUrl,
+        error: screenshotResult.error,
+        metadata: screenshotResult.metadata
+      } : undefined
     }
     
     if (useAdvanced && 'threatLevel' in aiResult) {
