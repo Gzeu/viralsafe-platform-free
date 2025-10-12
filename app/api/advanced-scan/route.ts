@@ -82,7 +82,7 @@ export async function POST(req: Request) {
         `Confidence level: ${aiResult.confidence}%`,
         `Threat classification: ${aiResult.threatLevel}`,
         `Detected patterns: ${aiResult.detectedPatterns.length}`,
-        ...aiResult.flags.map(flag => `Security flag: ${flag}`),
+        ...aiResult.flags.map((flag: string) => `Security flag: ${flag}`),
         ...(urlAnalysis ? [`URL reputation: ${urlAnalysis.reputation}`, `Domain threats: ${urlAnalysis.threatCategories.join(', ')}`] : [])
       ]
     }
@@ -97,6 +97,10 @@ export async function POST(req: Request) {
       risk: comprehensiveRisk,
       tags: [...aiResult.flags, ...(urlAnalysis ? urlAnalysis.threatCategories : [])],
     })
+
+    // Get request start time as number
+    const requestStartHeader = req.headers.get('x-request-start')
+    const requestStartTime = requestStartHeader ? parseInt(requestStartHeader, 10) : Date.now()
 
     // Comprehensive response
     const responseData = {
@@ -146,7 +150,7 @@ export async function POST(req: Request) {
       data: responseData,
       meta: {
         scanType: 'advanced',
-        processingTime: Date.now() - req.headers.get('x-request-start') || 0,
+        processingTime: Date.now() - requestStartTime,
         version: '2.0'
       }
     })
@@ -224,7 +228,7 @@ export async function GET() {
       virusTotal: hasVirusTotal,
       threatDatabase: true,
       socialEngineeringDetection: true,
-      ensembleAnalysis: (hasOpenAI + hasGroq + hasGemini) >= 2
+      ensembleAnalysis: (hasOpenAI ? 1 : 0) + (hasGroq ? 1 : 0) + (hasGemini ? 1 : 0) >= 2
     },
     features: [
       'Multi-provider AI ensemble analysis',
