@@ -81,6 +81,9 @@ export async function POST(request: NextRequest) {
       ipHash
     })
     
+    // Safe confidence access with fallback
+    const confidence = 'confidence' in aiResult ? aiResult.confidence : 85
+    
     // Prepare response
     const response = {
       ok: true,
@@ -97,7 +100,7 @@ export async function POST(request: NextRequest) {
         timestamp: analysisDoc.createdAt?.toISOString() || new Date().toISOString(),
         processing_time_ms: Date.now() - startTime,
         ai_provider: aiResult.provider,
-        confidence: aiResult.confidence,
+        confidence,
         virustotal_report: vtResult ? {
           verdict: vtResult.verdict,
           stats: vtResult.stats,
