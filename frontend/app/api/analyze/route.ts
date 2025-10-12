@@ -55,14 +55,12 @@ export async function POST(request: NextRequest) {
       }
     }
     
-    // Compute final risk score
+    // Compute final risk score - ONLY with supported parameters
     const riskAssessment = computeRisk({
       aiScore: aiResult.aiScore,
-      aiConfidence: aiResult.confidence,
       flags: aiResult.flags,
       url: parsed.url,
-      platform: parsed.platform,
-      vtVerdict: vtResult?.verdict
+      platform: parsed.platform
     })
     
     // Save to database
@@ -99,7 +97,7 @@ export async function POST(request: NextRequest) {
         timestamp: analysisDoc.createdAt?.toISOString() || new Date().toISOString(),
         processing_time_ms: Date.now() - startTime,
         ai_provider: aiResult.provider,
-        confidence: riskAssessment.confidence,
+        confidence: aiResult.confidence,
         virustotal_report: vtResult ? {
           verdict: vtResult.verdict,
           stats: vtResult.stats,
