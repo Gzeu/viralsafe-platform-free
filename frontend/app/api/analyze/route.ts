@@ -3,7 +3,7 @@ import { dbConnect } from '@/lib/db'
 import { Analysis } from '@/lib/models'
 import { analyzeSchema } from '@/lib/validators'
 import { classifyText } from '@/lib/ai'
-import { computeRiskScore } from '@/lib/scoring'
+import { computeRisk } from '@/lib/scoring'
 import { submitUrlScan, getAnalysisResult } from '@/lib/virustotal'
 import crypto from 'crypto'
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Compute final risk score
-    const riskAssessment = computeRiskScore({
+    const riskAssessment = computeRisk({
       aiScore: aiResult.aiScore,
       aiConfidence: aiResult.confidence,
       flags: aiResult.flags,
