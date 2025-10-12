@@ -16,20 +16,24 @@ export async function GET() {
       await dbConnect()
       const dbStart = Date.now()
       
-      // Quick ping to test connection
-      await mongoose.connection.db.admin().ping()
-      databaseResponseTime = Date.now() - dbStart
-      databaseStatus = 'connected'
-      
-      // Get collection counts
-      const [analysisCount, scanCount] = await Promise.all([
-        Analysis.countDocuments({}),
-        Scan.countDocuments({})
-      ])
-      
-      collections = {
-        analyses: analysisCount,
-        scans: scanCount
+      // Quick ping to test connection - SAFE CHECK
+      if (mongoose.connection.db) {
+        await mongoose.connection.db.admin().ping()
+        databaseResponseTime = Date.now() - dbStart
+        databaseStatus = 'connected'
+        
+        // Get collection counts
+        const [analysisCount, scanCount] = await Promise.all([
+          Analysis.countDocuments({}),
+          Scan.countDocuments({})
+        ])
+        
+        collections = {
+          analyses: analysisCount,
+          scans: scanCount
+        }
+      } else {
+        databaseStatus = 'connecting'
       }
       
     } catch (error) {
