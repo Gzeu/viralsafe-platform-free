@@ -19,7 +19,8 @@
     "jspdf": "^2.5.1",
     "openai": "^4.20.1",
     "@google/generative-ai": "^0.2.0",
-    "groq-sdk": "^0.3.1"
+    "groq-sdk": "^0.3.1",
+    "lucide-react": "^0.294.0"
   },
   "devDependencies": {
     "typescript": "^5.3.3",
