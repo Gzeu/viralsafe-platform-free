@@ -4,7 +4,7 @@ import { Analysis } from '@/lib/models'
 import { analyzeSchema } from '@/lib/validators'
 import { classifyText } from '@/lib/ai'
 import { computeRisk } from '@/lib/scoring'
-import { submitUrlScan, getAnalysisResult } from '@/lib/virustotal'
+import { scanUrl, fetchVerdict } from '@/lib/virustotal'
 import crypto from 'crypto'
 
 export async function POST(request: NextRequest) {
@@ -41,11 +41,11 @@ export async function POST(request: NextRequest) {
     let vtResult = null
     if (parsed.inputType === 'url' && parsed.checkUrls && process.env.VIRUSTOTAL_API_KEY) {
       try {
-        const { id } = await submitUrlScan(parsed.url!)
+        const { id } = await scanUrl(parsed.url!)
         
         // Quick check (don't wait too long)
         await new Promise(resolve => setTimeout(resolve, 3000))
-        vtResult = await getAnalysisResult(id)
+        vtResult = await fetchVerdict(id)
         
         if (vtResult.verdict === 'pending') {
           // Save scan ID for later retrieval
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
         virustotal_report: vtResult ? {
           verdict: vtResult.verdict,
           stats: vtResult.stats,
-          permalink: vtResult.permalink
+          permalink: `https://www.virustotal.com/gui/url-analysis/${btoa(parsed.url || '')}`
         } : undefined
       }
     }
